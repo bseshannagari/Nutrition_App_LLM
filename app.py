@@ -6,9 +6,12 @@ load_dotenv() ## load all the environment variables
 # On Windows, use the selector event loop to avoid Proactor pipe shutdown
 import sys
 import asyncio
+import warnings
+# Only set selector policy on Windows for Python versions older than 3.16
 if sys.platform.startswith("win"):
     try:
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        if sys.version_info < (3, 16):
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     except Exception:
         pass
 
@@ -22,8 +25,9 @@ genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 ## Function to load Google Gemini Pro Vision API And get response
 
 def get_gemini_repsonse(input,image,prompt):
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    response=model.generate_content([input,image[0],prompt])
+    # Use a currently supported Gemini model
+    model = genai.GenerativeModel("models/gemini-3.6-flash")
+    response = model.generate_content([input, image[0], prompt])
     return response.text
 
 def input_image_setup(uploaded_file):
@@ -49,10 +53,11 @@ st.set_page_config(page_title="Personalized AI Calorie Counting App")
 st.header("Personalized AI Calorie Counter App")
 input=st.text_input("Input Prompt: ",key="input")
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
-image=""   
+image = ""
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image.", use_container_width=True)
+    # streamlit deprecated `use_container_width`; use `width='stretch'` instead
+    st.image(image, caption="Uploaded Image.", width='stretch')
 
 
 submit=st.button("Tell me the total calories")
